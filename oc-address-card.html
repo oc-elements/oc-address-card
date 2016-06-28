@@ -1,0 +1,104 @@
+<link rel="import" href="../google-map/google-map.html">
+<link rel="import" href="../google-map/google-map-marker.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-card/paper-card.html">
+
+<dom-module id="oc-address-card">
+
+  <style>
+    paper-card {
+      @apply(--oc-address-card);
+    }
+    .card-content {
+      padding-top: 0;
+    }
+    google-map {
+      height: 200px;
+      width: 300px;
+    }
+  </style>
+
+  <template>
+    <paper-card heading="[[ address.name ]]">
+
+      <div class="card-content">
+        <address>
+          <template is="dom-repeat" items="[[ address.addressLines ]]" as="line">
+            <span>[[ line ]]</span>
+          </template>
+        </address>
+      </div>
+
+      <google-map
+              api-key="[[ googleMapsApiKey ]]"
+              fit-to-markers
+              disable-default-ui
+              zoom="15"
+              disable-zoom
+              additional-map-options="{ draggable: false }">
+        <google-map-marker
+                title="[[ address.name ]]"
+                latitude="[[ address.latitude ]]"
+                longitude="[[ address.longitude ]]"
+                draggable="false"
+        ></google-map-marker>
+      </google-map>
+
+      <template is="dom-if" if="[[ _hasActions ]]">
+        <div class="card-actions">
+          <template is="dom-repeat" items="[[actions]]" as="action">
+            <paper-button
+                    data-action-id="[[action.id]]"
+                    on-tap="_actionClicked"
+                    title$="[[action.title]]">
+              <iron-icon icon="[[action.icon]]" hidden$="[[!action.icon]]"></iron-icon>
+              <span>[[action.name]]</span>
+            </paper-button>
+          </template>
+        </div>
+      </template>
+
+    </paper-card>
+  </template>
+
+  <script>
+    (function () {
+      'use strict';
+
+      Polymer({
+        is: 'oc-address-card',
+
+        listeners: {
+          'card-action': 'cardAction'
+        },
+
+        properties: {
+          googleMapsApiKey: String,
+          address: Object,
+          actions: {
+            type: Array,
+            value: []
+          },
+          _hasActions: {
+            type: Boolean,
+            computed: '_computeHasActions(actions)'
+          }
+        },
+
+        _computeHasActions: function (actions) {
+          return this.actions.length > 0;
+        },
+
+        _actionClicked: function (e) {
+          var action = e.currentTarget.dataActionId;
+          for (var i in this.actions) {
+            if (this.actions[i].id == action) {
+              this.fire('card-action', this.actions[i]);
+            }
+          }
+        }
+      });
+    })();
+  </script>
+
+</dom-module>
