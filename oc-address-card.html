@@ -1,66 +1,122 @@
-<link rel="import" href="../google-map/google-map.html">
-<link rel="import" href="../google-map/google-map-marker.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../paper-card/paper-card.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../paper-material/paper-material.html">
+<link rel="import" href="../iron-form/iron-form.html">
 
 <dom-module id="oc-address-card">
 
-  <style>
-    paper-card {
-      @apply(--oc-address-card);
+  <style include="iron-flex iron-flex-alignment">
+
+    :host {
+      display: block;
     }
-    .card-content {
-      padding-top: 0;
+
+    paper-material {
+      padding: 10px;
+      /*@apply(--layout-horizontal);*/
+      /*@apply(--layout-wrap);*/
     }
-    google-map {
-      height: 200px;
-      width: 300px;
-    }
+
+    /*h2, paper-icon-button {*/
+      /*order: 1;*/
+    /*}*/
+
+    /*h2 {*/
+      /*width: 90%;*/
+      /*margin-bottom: 0;*/
+    /*}*/
+
+    /*paper-icon-button {*/
+      /*width: 10%;*/
+      /*margin-top: 10px;*/
+    /*}*/
+
+    /*address, paper-button {*/
+      /*order: 2;*/
+      /*width: 45%;*/
+    /*}*/
+
+    /*paper-button.primary {*/
+      /*background: var(--primary-background-color);*/
+      /*flex-basis: auto;*/
+      /*height: 50px;*/
+      /*margin-top: 20px;*/
+    /*}*/
+
+    /*.note {*/
+      /*order: 3;*/
+    /*}*/
+
+
   </style>
+<template>
+  <template is="dom-if" if="{{edit}}">
 
-  <template>
-    <paper-card heading="[[ address.name ]]">
+    <paper-material>
+        <h2>[[address.name]]</h2>
 
-      <div class="card-content">
         <address>
-          <template is="dom-repeat" items="[[ address.addressLines ]]" as="line">
-            <span>[[ line ]]</span>
-          </template>
+          <span hidden$="{{!address.complex}}">[[ address.complex ]]</span><br />
+          <span>[[ address.streetNumber ]] [[ address.streetName ]]</span><br />
+          <span hidden$="{{!address.suburb}}">[[ address.suburb ]]</span><br />
+          <span>[[ address.city ]]</span><br />
+          <span>[[ address.postalCode ]]</span><br />
         </address>
-      </div>
 
-      <google-map
-              api-key="[[ googleMapsApiKey ]]"
-              fit-to-markers
-              disable-default-ui
-              zoom="15"
-              disable-zoom
-              latitude="[[ address.latitude ]]"
-              longitude="[[ address.longitude ]]">
-        <google-map-marker
-                title="[[ address.name ]]"
-                latitude="[[ address.latitude ]]"
-                longitude="[[ address.longitude ]]"
-                draggable="false"
-        ></google-map-marker>
-      </google-map>
-
-      <template is="dom-if" if="[[ _hasActions ]]">
-        <div class="card-actions">
-          <template is="dom-repeat" items="[[actions]]" as="action">
-            <paper-button
-                    data-action-id="[[action.id]]"
-                    on-tap="_actionClicked"
-                    title$="[[action.title]]">
-              <iron-icon icon="[[action.icon]]" hidden$="[[!action.icon]]"></iron-icon>
-              <span>[[action.name]]</span>
-            </paper-button>
-          </template>
+      <template is="dom-if" if="[[address.note]]">
+        <div class="note">
+          <h3>Notes:</h3>
+          [[address.note]]
         </div>
       </template>
 
-    </paper-card>
+
+        <paper-icon-button icon="create" on-tap="_switchMode"></paper-icon-button>
+        <paper-button class="primary" raised>Set as primary</paper-button>
+
+    </paper-material>
   </template>
+
+  <template is="dom-if" if="{{!edit}}">
+    <paper-material>
+      <form is="iron-form" id="addressForm">
+        <div class="heading-container">
+          <h2><paper-input label="Address Name" always-float-label value="[[address.name]]" required></paper-input></h2>
+        </div>
+
+        <address>
+          <paper-input label="Complex" always-float-label value="[[address.complex]]"></paper-input>
+          <paper-input label="Street Number" always-float-label value="[[address.streetNumber]]"></paper-input>
+          <paper-input label="Street" always-float-label value="[[address.streetName]]"></paper-input>
+          <paper-input label="Suburb" always-float-label value="[[address.suburb]]"></paper-input>
+          <paper-input label="City/Town" always-float-label value="[[address.city]]" required></paper-input>
+          <paper-input label="Postal Code" always-float-label value="[[address.postalCode]]" required></paper-input>
+        </address>
+
+
+        <div class="note">
+          <paper-textarea label="Note" always-float-label value="{{address.note}}"></paper-textarea>
+        </div>
+
+        <paper-checkbox checked="{{address.isPrimary}}" noink>Set as primary location</paper-checkbox>
+
+
+        <paper-button class="primary" raised>Update Address</paper-button>
+      </form>
+      <paper-icon-button icon="arrow-back" on-tap="_switchMode"></paper-icon-button>
+
+
+    </paper-material>
+  </template>
+</template>
+
 
   <script>
     (function () {
@@ -69,37 +125,130 @@
       Polymer({
         is: 'oc-address-card',
 
-        listeners: {
-          'card-action': 'cardAction'
-        },
-
         properties: {
-          googleMapsApiKey: String,
           address: Object,
-          actions: {
-            type: Array,
-            value: []
-          },
-          _hasActions: {
+          edit : {
             type: Boolean,
-            computed: '_computeHasActions(actions)'
+            value: false
           }
         },
 
-        _computeHasActions: function (actions) {
-          return this.actions.length > 0;
-        },
-
-        _actionClicked: function (e) {
-          var action = e.currentTarget.dataActionId;
-          for (var i in this.actions) {
-            if (this.actions[i].id == action) {
-              this.fire('card-action', this.actions[i]);
-            }
+        _switchMode : function(){
+          console.log(this.edit);
+          if (this.edit) {
+            this.edit = false;
+          } else {
+            this.edit = true;
           }
         }
+
+
+
       });
     })();
   </script>
 
 </dom-module>
+
+<!--original code for deletion-->
+
+<!--<dom-module id="oc-address-card">-->
+
+  <!--<style>-->
+    <!--paper-card {-->
+      <!--@apply(&#45;&#45;oc-address-card);-->
+    <!--}-->
+    <!--.card-content {-->
+      <!--padding-top: 0;-->
+    <!--}-->
+    <!--google-map {-->
+      <!--height: 200px;-->
+      <!--width: 300px;-->
+    <!--}-->
+  <!--</style>-->
+
+  <!--<template>-->
+    <!--<paper-card heading="[[ address.name ]]">-->
+
+      <!--<div class="card-content">-->
+        <!--<address>-->
+          <!--<template is="dom-repeat" items="[[ address.addressLines ]]" as="line">-->
+            <!--<span>[[ line ]]</span>-->
+          <!--</template>-->
+        <!--</address>-->
+      <!--</div>-->
+
+      <!--<google-map-->
+              <!--api-key="[[ googleMapsApiKey ]]"-->
+              <!--fit-to-markers-->
+              <!--disable-default-ui-->
+              <!--zoom="15"-->
+              <!--disable-zoom-->
+              <!--latitude="[[ address.latitude ]]"-->
+              <!--longitude="[[ address.longitude ]]">-->
+        <!--<google-map-marker-->
+                <!--title="[[ address.name ]]"-->
+                <!--latitude="[[ address.latitude ]]"-->
+                <!--longitude="[[ address.longitude ]]"-->
+                <!--draggable="false"-->
+        <!--&gt;</google-map-marker>-->
+      <!--</google-map>-->
+
+      <!--<template is="dom-if" if="[[ _hasActions ]]">-->
+        <!--<div class="card-actions">-->
+          <!--<template is="dom-repeat" items="[[actions]]" as="action">-->
+            <!--<paper-button-->
+                    <!--data-action-id="[[action.id]]"-->
+                    <!--on-tap="_actionClicked"-->
+                    <!--title$="[[action.title]]">-->
+              <!--<iron-icon icon="[[action.icon]]" hidden$="[[!action.icon]]"></iron-icon>-->
+              <!--<span>[[action.name]]</span>-->
+            <!--</paper-button>-->
+          <!--</template>-->
+        <!--</div>-->
+      <!--</template>-->
+
+    <!--</paper-card>-->
+  <!--</template>-->
+
+  <!--<script>-->
+    <!--(function () {-->
+      <!--'use strict';-->
+
+      <!--Polymer({-->
+        <!--is: 'oc-address-card',-->
+
+        <!--listeners: {-->
+          <!--'card-action': 'cardAction'-->
+        <!--},-->
+
+        <!--properties: {-->
+          <!--googleMapsApiKey: String,-->
+          <!--address: Object,-->
+          <!--actions: {-->
+            <!--type: Array,-->
+            <!--value: []-->
+          <!--},-->
+          <!--_hasActions: {-->
+            <!--type: Boolean,-->
+            <!--computed: '_computeHasActions(actions)'-->
+          <!--}-->
+        <!--},-->
+
+        <!--_computeHasActions: function (actions) {-->
+          <!--return this.actions.length > 0;-->
+        <!--},-->
+
+        <!--_actionClicked: function (e) {-->
+          <!--var action = e.currentTarget.dataActionId;-->
+          <!--for (var i in this.actions) {-->
+            <!--if (this.actions[i].id == action) {-->
+              <!--this.fire('card-action', this.actions[i]);-->
+            <!--}-->
+          <!--}-->
+        <!--}-->
+      <!--});-->
+    <!--})();-->
+  <!--</script>-->
+
+<!--</dom-module>-->
